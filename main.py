@@ -4,7 +4,11 @@ import json
 import time
 from datetime import datetime
 
-TOKEN = "MTQ4NzM4NjIzODA4MzM5OTg0Mg.G1MOzn.456skE1CTny9NX3E0s5H7OQ1ex-eWk9VMvxYGA"
+import os
+
+TOKEN = os.getenv("DISCORD_TOKEN")
+
+bot.run(TOKEN)
 DATA_FILE = "voice_data.json"
 
 intents = discord.Intents.default()
