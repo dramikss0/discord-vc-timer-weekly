@@ -3,12 +3,10 @@ from discord.ext import commands
 import json
 import time
 from datetime import datetime
-
 import os
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-bot.run(TOKEN)
 DATA_FILE = "voice_data.json"
 
 intents = discord.Intents.default()
@@ -25,6 +23,7 @@ def load_data():
             return json.load(f)
     except:
         return {}
+
 
 def save_data():
     with open(DATA_FILE, "w") as f:
@@ -48,11 +47,9 @@ async def on_voice_state_update(member, old_state, new_state):
     if user_id not in data:
         data[user_id] = {"weekly": {}, "join_time": None}
 
-    # ЗАШЁЛ в голос
     if old_state.channel is None and new_state.channel is not None:
         data[user_id]["join_time"] = time.time()
 
-    # ВЫШЕЛ из голоса
     elif old_state.channel is not None and new_state.channel is None:
         join_time = data[user_id]["join_time"]
 
@@ -79,7 +76,6 @@ async def voicetime(ctx):
     for user_id, user_data in data.items():
         seconds = user_data.get("weekly", {}).get(week, 0)
 
-        # если сейчас в голосе — добавляем текущее время
         if user_data.get("join_time"):
             seconds += int(time.time() - user_data["join_time"])
 
@@ -90,7 +86,6 @@ async def voicetime(ctx):
         await ctx.send("Нет данных")
         return
 
-    # сортировка по убыванию
     results.sort(key=lambda x: x[1], reverse=True)
 
     lines = []
@@ -109,10 +104,7 @@ async def voicetime(ctx):
 
         lines.append(f"{i}. {name} — {hours}ч {minutes}м")
 
-    # Discord ограничение ~2000 символов
-    message = "\n".join(lines[:20])
-
-    await ctx.send(message)
+    await ctx.send("\n".join(lines[:20]))
 
 
 # --- запуск ---
