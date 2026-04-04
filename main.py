@@ -121,8 +121,7 @@ async def voicetime(ctx):
         lines.append(f"{i}. {name} — {hours}ч {minutes}м")
 
     await ctx.send("\n".join(lines[:20]))
-    
-     @bot.command()
+    @bot.command()
 @commands.has_permissions(administrator=True)
 async def resetvoice(ctx):
     week = get_week_key()
