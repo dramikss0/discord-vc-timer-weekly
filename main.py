@@ -38,6 +38,9 @@ def get_week_key():
 
 data = load_data()
 
+# 🔥 время последнего сброса
+RESET_TIME = time.time()
+
 
 # --- отслеживание голоса ---
 @bot.event
@@ -50,7 +53,6 @@ async def on_voice_state_update(member, old_state, new_state):
 
         members = [m for m in channel.members if not m.bot]
 
-        # если 2+ человека → запускаем таймер
         if len(members) >= 2:
             for m in members:
                 user_id = str(m.id)
@@ -61,7 +63,6 @@ async def on_voice_state_update(member, old_state, new_state):
                 if data[user_id]["join_time"] is None:
                     data[user_id]["join_time"] = now
 
-        # если меньше 2 → останавливаем и считаем время
         else:
             for m in members:
                 user_id = str(m.id)
@@ -78,22 +79,25 @@ async def on_voice_state_update(member, old_state, new_state):
 
                     save_data()
 
-    # проверяем оба канала (старый и новый)
     process_channel(old_state.channel)
     process_channel(new_state.channel)
+
 
 # --- команда ---
 @bot.command()
 async def voicetime(ctx):
     week = get_week_key()
+    now = time.time()
 
     results = []
 
     for user_id, user_data in data.items():
         seconds = user_data.get("weekly", {}).get(week, 0)
 
+        # 🔥 учитываем сброс
         if user_data.get("join_time"):
-            seconds += int(time.time() - user_data["join_time"])
+            start = max(user_data["join_time"], RESET_TIME)
+            seconds += int(now - start)
 
         if seconds > 0:
             results.append((user_id, seconds))
@@ -121,23 +125,24 @@ async def voicetime(ctx):
         lines.append(f"{i}. {name} — {hours}ч {minutes}м")
 
     await ctx.send("\n".join(lines[:20]))
+
+
+# --- сброс ---
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def resetvoice(ctx):
+    global RESET_TIME
+
     week = get_week_key()
-    now = time.time()
+    RESET_TIME = time.time()
 
     for user_id in data:
-        # сбрасываем неделю
         data[user_id]["weekly"][week] = 0
-
-        # если человек сейчас в голосе → обновляем старт
-        if data[user_id].get("join_time"):
-            data[user_id]["join_time"] = now
 
     save_data()
 
     await ctx.send("Статистика за текущую неделю сброшена")
+
 
 # --- запуск ---
 bot.run(TOKEN)
