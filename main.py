@@ -121,6 +121,19 @@ async def voicetime(ctx):
         lines.append(f"{i}. {name} — {hours}ч {minutes}м")
 
     await ctx.send("\n".join(lines[:20]))
+    
+     @bot.command()
+@commands.has_permissions(administrator=True)
+async def resetvoice(ctx):
+    week = get_week_key()
+
+    for user_id in data:
+        if week in data[user_id]["weekly"]:
+            data[user_id]["weekly"][week] = 0
+
+    save_data()
+
+    await ctx.send("Статистика за текущую неделю сброшена")
 
 
 # --- запуск ---
