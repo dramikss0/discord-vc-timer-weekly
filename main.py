@@ -125,15 +125,19 @@ async def voicetime(ctx):
 @commands.has_permissions(administrator=True)
 async def resetvoice(ctx):
     week = get_week_key()
+    now = time.time()
 
     for user_id in data:
-        if week in data[user_id]["weekly"]:
-            data[user_id]["weekly"][week] = 0
+        # сбрасываем неделю
+        data[user_id]["weekly"][week] = 0
+
+        # если человек сейчас в голосе → обновляем старт
+        if data[user_id].get("join_time"):
+            data[user_id]["join_time"] = now
 
     save_data()
 
     await ctx.send("Статистика за текущую неделю сброшена")
-
 
 # --- запуск ---
 bot.run(TOKEN)
