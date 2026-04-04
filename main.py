@@ -38,11 +38,11 @@ def get_week_key():
 
 data = load_data()
 
-# 🔥 время последнего сброса
+# время последнего сброса
 RESET_TIME = time.time()
 
 
-# --- отслеживание голоса ---
+# --- отслеживание голосовых каналов ---
 @bot.event
 async def on_voice_state_update(member, old_state, new_state):
     now = time.time()
@@ -53,6 +53,7 @@ async def on_voice_state_update(member, old_state, new_state):
 
         members = [m for m in channel.members if not m.bot]
 
+        # 2+ человека → начинаем считать
         if len(members) >= 2:
             for m in members:
                 user_id = str(m.id)
@@ -63,11 +64,12 @@ async def on_voice_state_update(member, old_state, new_state):
                 if data[user_id]["join_time"] is None:
                     data[user_id]["join_time"] = now
 
+        # меньше 2 → останавливаем и фиксируем
         else:
             for m in members:
                 user_id = str(m.id)
 
-                if user_id in data and data[user_id]["join_time"]:
+                if user_id in data and data[user_id].get("join_time"):
                     duration = int(now - data[user_id]["join_time"])
                     week = get_week_key()
 
@@ -83,7 +85,7 @@ async def on_voice_state_update(member, old_state, new_state):
     process_channel(new_state.channel)
 
 
-# --- команда ---
+# --- команда статистики ---
 @bot.command()
 async def voicetime(ctx):
     week = get_week_key()
@@ -94,13 +96,15 @@ async def voicetime(ctx):
     for user_id, user_data in data.items():
         seconds = user_data.get("weekly", {}).get(week, 0)
 
-        # 🔥 учитываем сброс
+        # учитываем текущее время, если человек в голосе
         if user_data.get("join_time"):
             start = max(user_data["join_time"], RESET_TIME)
             seconds += int(now - start)
 
-        if seconds > 0:
-            results.append((user_id, seconds))
+        if seconds <= 0:
+            continue
+
+        results.append((user_id, seconds))
 
     if not results:
         await ctx.send("Нет данных")
@@ -116,8 +120,11 @@ async def voicetime(ctx):
         if member:
             name = member.display_name
         else:
-            user = await bot.fetch_user(int(user_id))
-            name = user.name if user else f"User {user_id}"
+            try:
+                user = await bot.fetch_user(int(user_id))
+                name = user.name
+            except:
+                name = f"User {user_id}"
 
         hours = seconds // 3600
         minutes = (seconds % 3600) // 60
@@ -127,14 +134,15 @@ async def voicetime(ctx):
     await ctx.send("\n".join(lines[:20]))
 
 
-# --- сброс ---
+# --- сброс статистики ---
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def resetvoice(ctx):
     global RESET_TIME
 
-    week = get_week_key()
     RESET_TIME = time.time()
+
+    week = get_week_key()
 
     for user_id in data:
         data[user_id]["weekly"][week] = 0
