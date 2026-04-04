@@ -42,29 +42,45 @@ data = load_data()
 # --- отслеживание голоса ---
 @bot.event
 async def on_voice_state_update(member, old_state, new_state):
-    user_id = str(member.id)
+    now = time.time()
 
-    if user_id not in data:
-        data[user_id] = {"weekly": {}, "join_time": None}
+    def process_channel(channel):
+        if channel is None:
+            return
 
-    if old_state.channel is None and new_state.channel is not None:
-        data[user_id]["join_time"] = time.time()
+        members = [m for m in channel.members if not m.bot]
 
-    elif old_state.channel is not None and new_state.channel is None:
-        join_time = data[user_id]["join_time"]
+        # если 2+ человека → запускаем таймер
+        if len(members) >= 2:
+            for m in members:
+                user_id = str(m.id)
 
-        if join_time:
-            duration = int(time.time() - join_time)
-            week = get_week_key()
+                if user_id not in data:
+                    data[user_id] = {"weekly": {}, "join_time": None}
 
-            if week not in data[user_id]["weekly"]:
-                data[user_id]["weekly"][week] = 0
+                if data[user_id]["join_time"] is None:
+                    data[user_id]["join_time"] = now
 
-            data[user_id]["weekly"][week] += duration
-            data[user_id]["join_time"] = None
+        # если меньше 2 → останавливаем и считаем время
+        else:
+            for m in members:
+                user_id = str(m.id)
 
-            save_data()
+                if user_id in data and data[user_id]["join_time"]:
+                    duration = int(now - data[user_id]["join_time"])
+                    week = get_week_key()
 
+                    if week not in data[user_id]["weekly"]:
+                        data[user_id]["weekly"][week] = 0
+
+                    data[user_id]["weekly"][week] += duration
+                    data[user_id]["join_time"] = None
+
+                    save_data()
+
+    # проверяем оба канала (старый и новый)
+    process_channel(old_state.channel)
+    process_channel(new_state.channel)
 
 # --- команда ---
 @bot.command()
