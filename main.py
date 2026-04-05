@@ -98,7 +98,7 @@ async def voicetime(ctx):
 
         # учитываем текущее время, если человек в голосе
         if user_data.get("join_time"):
-     member = ctx.guild.get_member(int(user_id))
+    member = ctx.guild.get_member(int(user_id))
 
     if member and member.voice and member.voice.channel:
         channel = member.voice.channel
