@@ -96,18 +96,19 @@ async def voicetime(ctx):
     for user_id, user_data in data.items():
         seconds = user_data.get("weekly", {}).get(week, 0)
 
-        # учитываем текущее время, если человек в голосе
+        # 🔥 учитываем текущее время ТОЛЬКО если человек реально в голосе
         if user_data.get("join_time"):
-    member = ctx.guild.get_member(int(user_id))
+            member = ctx.guild.get_member(int(user_id))
 
-    if member and member.voice and member.voice.channel:
-        channel = member.voice.channel
-        members = [m for m in channel.members if not m.bot]
+            if member and member.voice and member.voice.channel:
+                channel = member.voice.channel
+                members = [m for m in channel.members if not m.bot]
 
-        if len(members) >= 2:
-            start = max(user_data["join_time"], RESET_TIME)
-            seconds += int(now - start)
+                if len(members) >= 2:
+                    start = max(user_data["join_time"], RESET_TIME)
+                    seconds += int(now - start)
 
+        # ❌ убираем нули
         if seconds <= 0:
             continue
 
@@ -117,6 +118,7 @@ async def voicetime(ctx):
         await ctx.send("Нет данных")
         return
 
+    # сортировка
     results.sort(key=lambda x: x[1], reverse=True)
 
     lines = []
