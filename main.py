@@ -98,6 +98,13 @@ async def voicetime(ctx):
 
         # учитываем текущее время, если человек в голосе
         if user_data.get("join_time"):
+    member = ctx.guild.get_member(int(user_id))
+
+    if member and member.voice and member.voice.channel:
+        channel = member.voice.channel
+        members = [m for m in channel.members if not m.bot]
+
+        if len(members) >= 2:
             start = max(user_data["join_time"], RESET_TIME)
             seconds += int(now - start)
 
